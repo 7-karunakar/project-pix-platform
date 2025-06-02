@@ -10,7 +10,8 @@ import {
   FileText, 
   Image,
   Search,
-  Plus
+  Plus,
+  CheckSquare
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,6 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Budget', path: '/budget', icon: CalendarCheck },
     { name: 'Cast & Crew', path: '/cast-crew', icon: User },
     { name: 'Schedule', path: '/schedule', icon: Calendar },
+    { name: 'Tasks', path: '/tasks', icon: CheckSquare },
     { name: 'Assets', path: '/assets', icon: Image },
     { name: 'Locations', path: '/locations', icon: Search },
     { name: 'Communication', path: '/communication', icon: MessageSquare },
@@ -54,16 +56,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <span className="text-white font-bold text-sm">MP</span>
                   </div>
                 </div>
-                <div className="ml-3">
+                <div className="ml-3 hidden sm:block">
                   <h1 className="text-lg font-semibold text-gray-900">Movie Production</h1>
                   <p className="text-sm text-gray-500">Management System</p>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors text-sm">
                 <Plus className="h-4 w-4" />
-                <span>New Project</span>
+                <span className="hidden sm:inline">New Project</span>
+                <span className="sm:hidden">New</span>
               </button>
             </div>
           </div>
@@ -74,7 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out`}>
           <div className="flex flex-col h-full">
-            <nav className="flex-1 px-4 py-6 space-y-2">
+            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -89,8 +92,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }`}
                     onClick={() => setIsSidebarOpen(false)}
                   >
-                    <Icon className="h-5 w-5 mr-3" />
-                    {item.name}
+                    <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
                   </Link>
                 );
               })}
@@ -107,8 +110,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">
+        <main className="flex-1 overflow-auto min-w-0">
+          <div className="p-4 sm:p-6">
             {children}
           </div>
         </main>

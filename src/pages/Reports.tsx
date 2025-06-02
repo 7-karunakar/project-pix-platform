@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, User, Download } from 'lucide-react';
+import { FileText, Calendar, User, Download, Mail, FileSpreadsheet } from 'lucide-react';
 import { storageService, Project, BudgetItem, ScheduleItem, CastCrewMember } from '../services/storageService';
 
 const Reports: React.FC = () => {
@@ -18,10 +17,200 @@ const Reports: React.FC = () => {
     setCastCrew(storageService.getCastCrew());
   }, []);
 
-  const generateReport = () => {
-    console.log(`Generating ${reportType} report for project: ${selectedProject || 'All Projects'}`);
-    // Here you would implement the actual report generation logic
-    alert(`${reportType} report generated successfully!`);
+  const generatePDFReport = () => {
+    const reportData = generateReportData();
+    const htmlContent = generateHTMLReport(reportData);
+    
+    // Create a blob with HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    alert('Report downloaded successfully!');
+  };
+
+  const generateExcelReport = () => {
+    const reportData = generateReportData();
+    const csvContent = generateCSVContent(reportData);
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    alert('Excel report downloaded successfully!');
+  };
+
+  const generateReportData = () => {
+    const filteredBudgetItems = selectedProject ? 
+      budgetItems.filter(item => item.projectId === selectedProject) : 
+      budgetItems;
+
+    const filteredScheduleItems = selectedProject ? 
+      scheduleItems.filter(item => item.projectId === selectedProject) : 
+      scheduleItems;
+
+    const totalBudget = filteredBudgetItems.reduce((sum, item) => sum + item.budgetAmount, 0);
+    const totalSpent = filteredBudgetItems.reduce((sum, item) => sum + item.actualAmount, 0);
+    const completedScenes = filteredScheduleItems.filter(item => item.status === 'completed').length;
+    const totalScenes = filteredScheduleItems.length;
+
+    return {
+      project: selectedProject ? projects.find(p => p.id === selectedProject) : null,
+      budget: { totalBudget, totalSpent, items: filteredBudgetItems },
+      schedule: { completedScenes, totalScenes, items: filteredScheduleItems },
+      castCrew,
+      reportType,
+      generatedAt: new Date().toISOString()
+    };
+  };
+
+  const generateHTMLReport = (data: any) => {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${data.reportType.charAt(0).toUpperCase() + data.reportType.slice(1)} Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 30px; }
+        .metric { display: inline-block; margin: 10px 20px 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; }
+        @media print { body { margin: 0; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Movie Production Management System</h1>
+        <h2>${data.reportType.charAt(0).toUpperCase() + data.reportType.slice(1)} Report</h2>
+        <p>Generated on: ${new Date(data.generatedAt).toLocaleString()}</p>
+        ${data.project ? `<p>Project: ${data.project.title}</p>` : '<p>All Projects</p>'}
+    </div>
+    
+    <div class="section">
+        <h3>Summary Metrics</h3>
+        <div class="metric">
+            <strong>Total Budget:</strong><br>$${data.budget.totalBudget.toLocaleString()}
+        </div>
+        <div class="metric">
+            <strong>Total Spent:</strong><br>$${data.budget.totalSpent.toLocaleString()}
+        </div>
+        <div class="metric">
+            <strong>Budget Utilization:</strong><br>${((data.budget.totalSpent / data.budget.totalBudget) * 100).toFixed(1)}%
+        </div>
+        <div class="metric">
+            <strong>Schedule Progress:</strong><br>${((data.schedule.completedScenes / data.schedule.totalScenes) * 100).toFixed(1)}%
+        </div>
+    </div>
+    
+    ${data.reportType === 'budget' || data.reportType === 'overview' ? `
+    <div class="section">
+        <h3>Budget Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Budget Amount</th>
+                    <th>Actual Amount</th>
+                    <th>Variance</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.budget.items.map((item: any) => `
+                    <tr>
+                        <td>${item.category}</td>
+                        <td>${item.description}</td>
+                        <td>$${item.budgetAmount.toLocaleString()}</td>
+                        <td>$${item.actualAmount.toLocaleString()}</td>
+                        <td>$${(item.actualAmount - item.budgetAmount).toLocaleString()}</td>
+                        <td>${item.status}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+    ` : ''}
+    
+    ${data.reportType === 'schedule' || data.reportType === 'overview' ? `
+    <div class="section">
+        <h3>Schedule Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Scene</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Cast</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.schedule.items.map((item: any) => `
+                    <tr>
+                        <td>${new Date(item.date).toLocaleDateString()}</td>
+                        <td>${item.scene}</td>
+                        <td>${item.location}</td>
+                        <td>${item.status}</td>
+                        <td>${item.cast.join(', ')}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+    ` : ''}
+    
+    <div class="section">
+        <h3>Cast & Crew Summary</h3>
+        <p>Total Team Members: ${data.castCrew.length}</p>
+        <p>Cast Members: ${data.castCrew.filter((m: any) => m.type === 'cast').length}</p>
+        <p>Crew Members: ${data.castCrew.filter((m: any) => m.type === 'crew').length}</p>
+    </div>
+</body>
+</html>
+    `;
+  };
+
+  const generateCSVContent = (data: any) => {
+    let csvContent = `${data.reportType.toUpperCase()} REPORT\n`;
+    csvContent += `Generated,${new Date(data.generatedAt).toLocaleString()}\n`;
+    csvContent += `Project,${data.project ? data.project.title : 'All Projects'}\n\n`;
+    
+    csvContent += `SUMMARY METRICS\n`;
+    csvContent += `Total Budget,$${data.budget.totalBudget.toLocaleString()}\n`;
+    csvContent += `Total Spent,$${data.budget.totalSpent.toLocaleString()}\n`;
+    csvContent += `Budget Utilization,${((data.budget.totalSpent / data.budget.totalBudget) * 100).toFixed(1)}%\n`;
+    csvContent += `Schedule Progress,${((data.schedule.completedScenes / data.schedule.totalScenes) * 100).toFixed(1)}%\n\n`;
+    
+    if (data.reportType === 'budget' || data.reportType === 'overview') {
+      csvContent += `BUDGET DETAILS\n`;
+      csvContent += `Category,Description,Budget Amount,Actual Amount,Variance,Status\n`;
+      data.budget.items.forEach((item: any) => {
+        csvContent += `${item.category},${item.description},$${item.budgetAmount},$${item.actualAmount},$${item.actualAmount - item.budgetAmount},${item.status}\n`;
+      });
+      csvContent += `\n`;
+    }
+    
+    if (data.reportType === 'schedule' || data.reportType === 'overview') {
+      csvContent += `SCHEDULE DETAILS\n`;
+      csvContent += `Date,Scene,Location,Status,Cast\n`;
+      data.schedule.items.forEach((item: any) => {
+        csvContent += `${new Date(item.date).toLocaleDateString()},${item.scene},${item.location},${item.status},"${item.cast.join(', ')}"\n`;
+      });
+    }
+    
+    return csvContent;
   };
 
   const generateCallSheet = () => {
@@ -33,8 +222,58 @@ const Reports: React.FC = () => {
       return;
     }
 
-    console.log('Generating call sheet for today:', todaysSchedule);
-    alert('Call sheet generated successfully!');
+    const callSheetContent = `
+CALL SHEET - ${new Date().toLocaleDateString()}
+
+WEATHER: Sunny, 75°F
+
+TODAY'S SCHEDULE:
+${todaysSchedule.map(item => `
+SCENE: ${item.scene}
+TIME: ${item.time}
+LOCATION: ${item.location}
+CAST: ${item.cast.join(', ')}
+CREW: ${item.crew.join(', ')}
+NOTES: ${item.notes || 'N/A'}
+---
+`).join('')}
+
+GENERAL INFORMATION:
+- Please arrive 15 minutes before your call time
+- Bring proper identification
+- Mobile phones on silent during filming
+- Catering will be available on location
+
+EMERGENCY CONTACT: Production Office - (555) 123-4567
+    `;
+
+    const blob = new Blob([callSheetContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `call-sheet-${today}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    alert('Call sheet generated and downloaded successfully!');
+  };
+
+  const emailReport = () => {
+    const reportData = generateReportData();
+    const subject = `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report - ${new Date().toLocaleDateString()}`;
+    const body = `Please find the attached ${reportType} report for ${reportData.project ? reportData.project.title : 'all projects'}.
+
+Summary:
+- Total Budget: $${reportData.budget.totalBudget.toLocaleString()}
+- Total Spent: $${reportData.budget.totalSpent.toLocaleString()}
+- Budget Utilization: ${((reportData.budget.totalSpent / reportData.budget.totalBudget) * 100).toFixed(1)}%
+- Schedule Progress: ${((reportData.schedule.completedScenes / reportData.schedule.totalScenes) * 100).toFixed(1)}%
+
+Best regards,
+Production Management Team`;
+
+    const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
   };
 
   const filteredBudgetItems = selectedProject ? 
@@ -64,22 +303,22 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-gray-600 mt-1">Generate comprehensive production reports and call sheets</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <button
             onClick={generateCallSheet}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
           >
             <Calendar className="h-4 w-4" />
             <span>Generate Call Sheet</span>
           </button>
           <button
-            onClick={generateReport}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            onClick={generatePDFReport}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
           >
             <Download className="h-4 w-4" />
             <span>Generate Report</span>
@@ -88,7 +327,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Report Configuration */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -120,12 +359,12 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Budget Utilization</p>
-              <p className="text-3xl font-bold text-gray-900">{budgetUtilization.toFixed(1)}%</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{budgetUtilization.toFixed(1)}%</p>
             </div>
             <div className="bg-blue-100 p-3 rounded-lg">
               <FileText className="h-6 w-6 text-blue-600" />
@@ -141,11 +380,11 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Schedule Progress</p>
-              <p className="text-3xl font-bold text-gray-900">{scheduleProgress.toFixed(1)}%</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{scheduleProgress.toFixed(1)}%</p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
               <Calendar className="h-6 w-6 text-green-600" />
@@ -161,11 +400,11 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Spent</p>
-              <p className="text-3xl font-bold text-gray-900">${totalSpent.toLocaleString()}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">${totalSpent.toLocaleString()}</p>
             </div>
             <div className="bg-yellow-100 p-3 rounded-lg">
               <FileText className="h-6 w-6 text-yellow-600" />
@@ -176,11 +415,11 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Team Members</p>
-              <p className="text-3xl font-bold text-gray-900">{castCrew.length}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{castCrew.length}</p>
             </div>
             <div className="bg-purple-100 p-3 rounded-lg">
               <User className="h-6 w-6 text-purple-600" />
@@ -196,14 +435,14 @@ const Reports: React.FC = () => {
 
       {/* Report Preview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Report Preview</h3>
           <p className="text-sm text-gray-600">
             {reportTypes.find(type => type.id === reportType)?.description}
           </p>
         </div>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {reportType === 'overview' && (
             <div className="space-y-6">
               <div>
@@ -353,24 +592,36 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Report Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button 
+            onClick={generatePDFReport}
+            className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
             <FileText className="h-6 w-6 text-blue-600 mb-2" />
-            <span className="text-sm font-medium text-blue-600">Export PDF</span>
+            <span className="text-sm font-medium text-blue-600 text-center">Export HTML</span>
           </button>
-          <button className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <Download className="h-6 w-6 text-green-600 mb-2" />
-            <span className="text-sm font-medium text-green-600">Export Excel</span>
+          <button 
+            onClick={generateExcelReport}
+            className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            <FileSpreadsheet className="h-6 w-6 text-green-600 mb-2" />
+            <span className="text-sm font-medium text-green-600 text-center">Export CSV</span>
           </button>
-          <button className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+          <button 
+            onClick={generateCallSheet}
+            className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors"
+          >
             <Calendar className="h-6 w-6 text-yellow-600 mb-2" />
-            <span className="text-sm font-medium text-yellow-600">Schedule Report</span>
+            <span className="text-sm font-medium text-yellow-600 text-center">Call Sheet</span>
           </button>
-          <button className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-            <User className="h-6 w-6 text-purple-600 mb-2" />
-            <span className="text-sm font-medium text-purple-600">Email Report</span>
+          <button 
+            onClick={emailReport}
+            className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+          >
+            <Mail className="h-6 w-6 text-purple-600 mb-2" />
+            <span className="text-sm font-medium text-purple-600 text-center">Email Report</span>
           </button>
         </div>
       </div>
