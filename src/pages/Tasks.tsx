@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, User, AlertCircle, CheckCircle2, Clock, Filter, Search } from 'lucide-react';
 import { storageService, Task, Project, CastCrewMember } from '../services/storageService';
@@ -8,7 +7,16 @@ const Tasks: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [castCrew, setCastCrew] = useState<CastCrewMember[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<{
+    title: string;
+    description: string;
+    assignedTo: string;
+    priority: 'low' | 'medium' | 'high';
+    status: 'todo' | 'in-progress' | 'completed';
+    dueDate: string;
+    projectId: string;
+    dependencies: string[];
+  } | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,8 +71,16 @@ const Tasks: React.FC = () => {
   };
 
   const handleEdit = (task: Task) => {
-    setFormData(task);
-    setEditingTask(task);
+    setEditingTask({
+      title: task.title,
+      description: task.description,
+      assignedTo: task.assignedTo,
+      priority: task.priority,
+      status: task.status,
+      dueDate: task.dueDate,
+      projectId: task.projectId,
+      dependencies: task.dependencies
+    });
     setShowForm(true);
   };
 

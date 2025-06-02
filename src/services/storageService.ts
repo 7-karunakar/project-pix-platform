@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   title: string;
@@ -80,6 +79,7 @@ export interface Task {
   status: 'todo' | 'in-progress' | 'completed';
   dueDate: string;
   projectId: string;
+  dependencies: string[];
 }
 
 export interface Message {
