@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, User, Download, Mail, FileSpreadsheet } from 'lucide-react';
+import { FileText, Calendar, User, Download, Mail, FileSpreadsheet, Film } from 'lucide-react';
 import { storageService, Project, BudgetItem, ScheduleItem, CastCrewMember } from '../services/storageService';
+import SceneCallSheet from '../components/SceneCallSheet';
 
 const Reports: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -9,6 +10,8 @@ const Reports: React.FC = () => {
   const [castCrew, setCastCrew] = useState<CastCrewMember[]>([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [reportType, setReportType] = useState('overview');
+  const [showSceneCallSheet, setShowSceneCallSheet] = useState(false);
+  const [selectedScene, setSelectedScene] = useState<ScheduleItem | null>(null);
 
   useEffect(() => {
     setProjects(storageService.getProjects());
@@ -276,6 +279,11 @@ Production Management Team`;
     window.location.href = mailtoLink;
   };
 
+  const handleSceneCallSheet = (scene: ScheduleItem) => {
+    setSelectedScene(scene);
+    setShowSceneCallSheet(true);
+  };
+
   const filteredBudgetItems = selectedProject ? 
     budgetItems.filter(item => item.projectId === selectedProject) : 
     budgetItems;
@@ -432,6 +440,41 @@ Production Management Team`;
           </div>
         </div>
       </div>
+
+      {/* Scene Call Sheets Section */}
+      {reportType === 'schedule' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Individual Scene Call Sheets</h3>
+            <p className="text-sm text-gray-600">
+              Generate call sheets for specific scenes
+            </p>
+          </div>
+          
+          <div className="p-4 sm:p-6">
+            <div className="space-y-3">
+              {filteredScheduleItems.map(item => (
+                <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium">{item.scene}</div>
+                    <div className="text-sm text-gray-600">
+                      {item.location} - {new Date(item.date).toLocaleDateString()} at {item.time}
+                    </div>
+                    <div className="text-sm text-gray-500">{item.notes || 'No description'}</div>
+                  </div>
+                  <button
+                    onClick={() => handleSceneCallSheet(item)}
+                    className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    <Film className="h-4 w-4" />
+                    <span>Scene Call Sheet</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report Preview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -625,6 +668,18 @@ Production Management Team`;
           </button>
         </div>
       </div>
+
+      {/* Scene Call Sheet Modal */}
+      {showSceneCallSheet && selectedScene && (
+        <SceneCallSheet
+          scheduleItem={selectedScene}
+          project={projects.find(p => p.id === selectedScene.projectId)}
+          onClose={() => {
+            setShowSceneCallSheet(false);
+            setSelectedScene(null);
+          }}
+        />
+      )}
     </div>
   );
 };
