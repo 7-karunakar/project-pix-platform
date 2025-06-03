@@ -1,163 +1,162 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Package, Wrench, Shirt, Scan } from 'lucide-react';
+import { Plus, Search, Package, QrCode, Calendar, User, MapPin, AlertCircle, Edit3, Trash2 } from 'lucide-react';
 import { storageService, Asset } from '../services/storageService';
 import BarcodeScanner from '../components/BarcodeScanner';
 
 const Assets: React.FC = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [filteredAssets, setFilteredAssets] = useState<Asset[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [formData, setFormData] = useState({
+  const [newAsset, setNewAsset] = useState<Omit<Asset, 'id'>>({
     name: '',
-    category: 'props' as 'props' | 'costumes' | 'equipment',
-    description: '',
-    status: 'available' as 'available' | 'in-use' | 'maintenance',
+    type: 'prop',
+    status: 'available',
+    location: '',
     assignedTo: '',
     assignedScene: '',
-    cost: 0,
+    notes: '',
     barcode: ''
   });
 
   useEffect(() => {
-    setAssets(storageService.getAssets());
+    const loadedAssets = storageService.getAssets();
+    setAssets(loadedAssets);
+    setFilteredAssets(loadedAssets);
   }, []);
 
-  const handleCreateAsset = () => {
-    if (formData.name && formData.description) {
-      const newAsset: Asset = {
-        id: selectedAsset?.id || Date.now().toString(),
-        ...formData,
-        barcode: formData.barcode || undefined
-      };
+  useEffect(() => {
+    let filtered = assets;
 
-      storageService.saveAsset(newAsset);
-      setAssets(storageService.getAssets());
-      setShowCreateModal(false);
-      resetForm();
+    if (searchTerm) {
+      filtered = filtered.filter(asset =>
+        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asset.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (asset.assignedTo && asset.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (asset.barcode && asset.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
     }
+
+    if (filterType !== 'all') {
+      filtered = filtered.filter(asset => asset.type === filterType);
+    }
+
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(asset => asset.status === filterStatus);
+    }
+
+    setFilteredAssets(filtered);
+  }, [assets, searchTerm, filterType, filterStatus]);
+
+  const handleAddAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    const asset: Asset = {
+      ...newAsset,
+      id: Date.now().toString()
+    };
+    
+    storageService.saveAsset(asset);
+    setAssets([...assets, asset]);
+    setNewAsset({
+      name: '',
+      type: 'prop',
+      status: 'available',
+      location: '',
+      assignedTo: '',
+      assignedScene: '',
+      notes: '',
+      barcode: ''
+    });
+    setShowAddForm(false);
+    
+    alert('Asset added successfully!');
   };
 
-  const handleUpdateAsset = () => {
-    if (selectedAsset && formData.name && formData.description) {
-      const updatedAsset: Asset = {
-        ...selectedAsset,
-        ...formData,
-        barcode: formData.barcode || undefined
-      };
-
-      storageService.saveAsset(updatedAsset);
-      setAssets(storageService.getAssets());
-      setSelectedAsset(null);
-      setShowCreateModal(false);
-      resetForm();
-    }
-  };
-
-  const handleDeleteAsset = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this asset?')) {
-      storageService.deleteAsset(id);
-      setAssets(storageService.getAssets());
-    }
-  };
-
-  const handleCheckOut = (id: string, assignedTo: string, assignedScene: string) => {
-    const asset = assets.find(a => a.id === id);
-    if (asset) {
-      const updatedAsset = {
-        ...asset,
-        status: 'in-use' as const,
+  const handleCheckOut = (asset: Asset) => {
+    const assignedTo = prompt('Assign to (name):');
+    const assignedScene = prompt('Assign to scene:');
+    
+    if (assignedTo && assignedScene) {
+      const updatedAsset = { 
+        ...asset, 
+        status: 'checked-out' as const,
         assignedTo,
         assignedScene
       };
       storageService.saveAsset(updatedAsset);
-      setAssets(storageService.getAssets());
+      setAssets(assets.map(a => a.id === asset.id ? updatedAsset : a));
+      alert('Asset checked out successfully!');
     }
   };
 
-  const handleCheckIn = (id: string) => {
-    const asset = assets.find(a => a.id === id);
-    if (asset) {
-      const updatedAsset = {
-        ...asset,
-        status: 'available' as const,
-        assignedTo: undefined,
-        assignedScene: undefined
-      };
-      storageService.saveAsset(updatedAsset);
-      setAssets(storageService.getAssets());
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      category: 'props',
-      description: '',
-      status: 'available',
+  const handleCheckIn = (asset: Asset) => {
+    const updatedAsset = { 
+      ...asset, 
+      status: 'available' as const,
       assignedTo: '',
-      assignedScene: '',
-      cost: 0,
-      barcode: ''
-    });
+      assignedScene: ''
+    };
+    storageService.saveAsset(updatedAsset);
+    setAssets(assets.map(a => a.id === asset.id ? updatedAsset : a));
+    alert('Asset checked in successfully!');
   };
 
-  const openEditModal = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setFormData({
-      name: asset.name,
-      category: asset.category,
-      description: asset.description,
-      status: asset.status,
-      assignedTo: asset.assignedTo || '',
-      assignedScene: asset.assignedScene || '',
-      cost: asset.cost,
-      barcode: (asset as any).barcode || ''
-    });
-    setShowCreateModal(true);
+  const handleEditAsset = (asset: Asset) => {
+    setEditingAsset(asset);
+    setShowEditForm(true);
   };
 
-  const handleBarcodeScanned = (barcode: string) => {
-    // Check if asset with this barcode already exists
-    const existingAsset = assets.find(a => (a as any).barcode === barcode);
-    if (existingAsset) {
-      alert(`Asset "${existingAsset.name}" already exists with this barcode`);
-      setShowBarcodeScanner(false);
-      return;
+  const handleUpdateAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingAsset) {
+      storageService.saveAsset(editingAsset);
+      setAssets(assets.map(a => a.id === editingAsset.id ? editingAsset : a));
+      setShowEditForm(false);
+      setEditingAsset(null);
+      alert('Asset updated successfully!');
     }
-
-    setFormData(prev => ({ ...prev, barcode }));
-    setShowBarcodeScanner(false);
-    setShowCreateModal(true);
   };
 
-  const filteredAssets = assets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         asset.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || asset.category === filterCategory;
-    const matchesStatus = filterStatus === 'all' || asset.status === filterStatus;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const handleDeleteAsset = (id: string) => {
+    if (confirm('Are you sure you want to delete this asset?')) {
+      storageService.deleteAsset(id);
+      setAssets(assets.filter(a => a.id !== id));
+      alert('Asset deleted successfully!');
+    }
+  };
+
+  const handleBarcodeScanned = (code: string) => {
+    const asset = assets.find(a => a.barcode === code);
+    if (asset) {
+      alert(`Asset found: ${asset.name}\nStatus: ${asset.status}\nLocation: ${asset.location}`);
+    } else {
+      alert('Asset not found for this barcode');
+    }
+    setShowBarcodeScanner(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800';
-      case 'in-use': return 'bg-blue-100 text-blue-800';
-      case 'maintenance': return 'bg-red-100 text-red-800';
+      case 'checked-out': return 'bg-blue-100 text-blue-800';
+      case 'maintenance': return 'bg-yellow-100 text-yellow-800';
+      case 'damaged': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'props': return Package;
-      case 'costumes': return Shirt;
-      case 'equipment': return Wrench;
-      default: return Package;
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'prop': return 'bg-purple-100 text-purple-800';
+      case 'costume': return 'bg-pink-100 text-pink-800';
+      case 'equipment': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -167,19 +166,19 @@ const Assets: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Asset Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage production assets with barcode support</p>
+          <p className="text-gray-600 mt-1">Track and manage all production assets</p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <button
             onClick={() => setShowBarcodeScanner(true)}
-            className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
           >
-            <Scan className="h-4 w-4" />
-            <span>Scan Asset</span>
+            <QrCode className="h-4 w-4" />
+            <span>Scan Barcode</span>
           </button>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
+            onClick={() => setShowAddForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors justify-center"
           >
             <Plus className="h-4 w-4" />
             <span>Add Asset</span>
@@ -187,56 +186,11 @@ const Assets: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Available</p>
-              <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                {assets.filter(a => a.status === 'available').length}
-              </p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">In Use</p>
-              <p className="text-2xl sm:text-3xl font-bold text-blue-600">
-                {assets.filter(a => a.status === 'in-use').length}
-              </p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Maintenance</p>
-              <p className="text-2xl sm:text-3xl font-bold text-red-600">
-                {assets.filter(a => a.status === 'maintenance').length}
-              </p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
+      {/* Filters */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
               placeholder="Search assets..."
@@ -246,123 +200,325 @@ const Assets: React.FC = () => {
             />
           </div>
           <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">All Categories</option>
-            <option value="props">Props</option>
-            <option value="costumes">Costumes</option>
+            <option value="all">All Types</option>
+            <option value="prop">Props</option>
+            <option value="costume">Costumes</option>
             <option value="equipment">Equipment</option>
           </select>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Status</option>
             <option value="available">Available</option>
-            <option value="in-use">In Use</option>
+            <option value="checked-out">Checked Out</option>
             <option value="maintenance">Maintenance</option>
+            <option value="damaged">Damaged</option>
           </select>
+          <div className="text-sm text-gray-600 flex items-center">
+            <Package className="h-4 w-4 mr-1" />
+            {filteredAssets.length} assets
+          </div>
         </div>
       </div>
 
-      {/* Assets List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredAssets.map((asset) => {
-          const CategoryIcon = getCategoryIcon(asset.category);
-          return (
-            <div key={asset.id} className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 p-2 rounded-lg">
-                    <CategoryIcon className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{asset.name}</h3>
-                    <p className="text-sm text-gray-500 capitalize">{asset.category}</p>
-                  </div>
-                </div>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(asset.status)}`}>
-                  {asset.status.replace('-', ' ')}
-                </span>
-              </div>
-              
-              <p className="text-sm text-gray-600 mb-4">{asset.description}</p>
-              
-              {(asset as any).barcode && (
-                <div className="mb-4 p-2 bg-gray-50 rounded border">
-                  <div className="flex items-center space-x-2">
-                    <Scan className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-mono text-gray-700">{(asset as any).barcode}</span>
+      {/* Assets Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredAssets.map(asset => (
+          <div key={asset.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{asset.name}</h3>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(asset.type)}`}>
+                      {asset.type}
+                    </span>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(asset.status)}`}>
+                      {asset.status}
+                    </span>
                   </div>
                 </div>
-              )}
-
-              {asset.assignedTo && (
-                <div className="mb-4 text-sm">
-                  <p className="text-gray-600">Assigned to: <span className="font-medium">{asset.assignedTo}</span></p>
-                  {asset.assignedScene && (
-                    <p className="text-gray-600">Scene: <span className="font-medium">{asset.assignedScene}</span></p>
-                  )}
-                </div>
-              )}
-
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">Cost: <span className="font-medium">${asset.cost.toLocaleString()}</span></p>
-              </div>
-
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => openEditModal(asset)}
-                  className="flex-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Edit
-                </button>
-                {asset.status === 'available' ? (
+                <div className="flex space-x-1">
                   <button
-                    onClick={() => {
-                      const assignedTo = prompt('Assign to:');
-                      const assignedScene = prompt('Scene:');
-                      if (assignedTo) handleCheckOut(asset.id, assignedTo, assignedScene || '');
-                    }}
-                    className="flex-1 text-green-600 hover:text-green-700 text-sm font-medium"
+                    onClick={() => handleEditAsset(asset)}
+                    className="p-1 text-gray-400 hover:text-blue-600"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAsset(asset.id)}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  <span>{asset.location}</span>
+                </div>
+                {asset.assignedTo && (
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    <span>Assigned to: {asset.assignedTo}</span>
+                  </div>
+                )}
+                {asset.assignedScene && (
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span>Scene: {asset.assignedScene}</span>
+                  </div>
+                )}
+                {asset.barcode && (
+                  <div className="flex items-center">
+                    <QrCode className="h-4 w-4 mr-2" />
+                    <span>Barcode: {asset.barcode}</span>
+                  </div>
+                )}
+                {asset.notes && (
+                  <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                    {asset.notes}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex space-x-2">
+                {asset.status === 'available' && (
+                  <button
+                    onClick={() => handleCheckOut(asset)}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
                   >
                     Check Out
                   </button>
-                ) : asset.status === 'in-use' ? (
+                )}
+                {asset.status === 'checked-out' && (
                   <button
-                    onClick={() => handleCheckIn(asset.id)}
-                    className="flex-1 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                    onClick={() => handleCheckIn(asset)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
                   >
                     Check In
                   </button>
-                ) : null}
-                <button
-                  onClick={() => handleDeleteAsset(asset.id)}
-                  className="flex-1 text-red-600 hover:text-red-700 text-sm font-medium"
-                >
-                  Delete
-                </button>
+                )}
+                {asset.status === 'maintenance' && (
+                  <div className="flex-1 bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm text-center">
+                    In Maintenance
+                  </div>
+                )}
+                {asset.status === 'damaged' && (
+                  <div className="flex-1 bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm text-center">
+                    Damaged
+                  </div>
+                )}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
-      {filteredAssets.length === 0 && (
-        <div className="text-center py-12">
-          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
-          <p className="text-gray-600 mb-6">Start building your asset inventory</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Asset</span>
-          </button>
+      {/* Add Asset Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Add New Asset</h3>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleAddAsset} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newAsset.name}
+                  onChange={(e) => setNewAsset({...newAsset, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select
+                  value={newAsset.type}
+                  onChange={(e) => setNewAsset({...newAsset, type: e.target.value as 'prop' | 'costume' | 'equipment'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="prop">Prop</option>
+                  <option value="costume">Costume</option>
+                  <option value="equipment">Equipment</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  required
+                  value={newAsset.location}
+                  onChange={(e) => setNewAsset({...newAsset, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (Optional)</label>
+                <input
+                  type="text"
+                  value={newAsset.barcode}
+                  onChange={(e) => setNewAsset({...newAsset, barcode: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                <textarea
+                  value={newAsset.notes}
+                  onChange={(e) => setNewAsset({...newAsset, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Asset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Asset Modal */}
+      {showEditForm && editingAsset && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Edit Asset</h3>
+              <button
+                onClick={() => setShowEditForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleUpdateAsset} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingAsset.name}
+                  onChange={(e) => setEditingAsset({...editingAsset, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select
+                  value={editingAsset.type}
+                  onChange={(e) => setEditingAsset({...editingAsset, type: e.target.value as 'prop' | 'costume' | 'equipment'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="prop">Prop</option>
+                  <option value="costume">Costume</option>
+                  <option value="equipment">Equipment</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={editingAsset.status}
+                  onChange={(e) => setEditingAsset({...editingAsset, status: e.target.value as 'available' | 'checked-out' | 'maintenance' | 'damaged'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="available">Available</option>
+                  <option value="checked-out">Checked Out</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="damaged">Damaged</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  required
+                  value={editingAsset.location}
+                  onChange={(e) => setEditingAsset({...editingAsset, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                <input
+                  type="text"
+                  value={editingAsset.assignedTo || ''}
+                  onChange={(e) => setEditingAsset({...editingAsset, assignedTo: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Scene</label>
+                <input
+                  type="text"
+                  value={editingAsset.assignedScene || ''}
+                  onChange={(e) => setEditingAsset({...editingAsset, assignedScene: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                <input
+                  type="text"
+                  value={editingAsset.barcode || ''}
+                  onChange={(e) => setEditingAsset({...editingAsset, barcode: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={editingAsset.notes || ''}
+                  onChange={(e) => setEditingAsset({...editingAsset, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditForm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Update Asset
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -374,147 +530,28 @@ const Assets: React.FC = () => {
         />
       )}
 
-      {/* Create/Edit Asset Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowCreateModal(false)}></div>
-            
-            <div className="inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-6">
-                {selectedAsset ? 'Edit Asset' : 'Add New Asset'}
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Asset name"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value as 'props' | 'costumes' | 'equipment'})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="props">Props</option>
-                      <option value="costumes">Costumes</option>
-                      <option value="equipment">Equipment</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value as 'available' | 'in-use' | 'maintenance'})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="available">Available</option>
-                      <option value="in-use">In Use</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Asset description"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={formData.barcode}
-                      onChange={(e) => setFormData({...formData, barcode: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter or scan barcode"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        setShowBarcodeScanner(true);
-                      }}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      <Scan className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
-                  <input
-                    type="number"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({...formData, cost: parseFloat(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-
-                {formData.status === 'in-use' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                      <input
-                        type="text"
-                        value={formData.assignedTo}
-                        onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Person or department"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Scene</label>
-                      <input
-                        type="text"
-                        value={formData.assignedScene}
-                        onChange={(e) => setFormData({...formData, assignedScene: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Scene number or name"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setSelectedAsset(null);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={selectedAsset ? handleUpdateAsset : handleCreateAsset}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                >
-                  {selectedAsset ? 'Update' : 'Add'} Asset
-                </button>
-              </div>
+      {/* Empty State */}
+      {filteredAssets.length === 0 && (
+        <div className="text-center py-12">
+          <Package className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No assets found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchTerm || filterType !== 'all' || filterStatus !== 'all' 
+              ? 'Try adjusting your search or filters' 
+              : 'Get started by adding a new asset'
+            }
+          </p>
+          {!searchTerm && filterType === 'all' && filterStatus === 'all' && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Asset
+              </button>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
