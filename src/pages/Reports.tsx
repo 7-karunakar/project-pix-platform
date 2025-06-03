@@ -12,6 +12,7 @@ const Reports: React.FC = () => {
   const [reportType, setReportType] = useState('overview');
   const [showSceneCallSheet, setShowSceneCallSheet] = useState(false);
   const [selectedScene, setSelectedScene] = useState<ScheduleItem | null>(null);
+  const [showProjectCallSheet, setShowProjectCallSheet] = useState(false);
 
   useEffect(() => {
     setProjects(storageService.getProjects());
@@ -284,6 +285,14 @@ Production Management Team`;
     setShowSceneCallSheet(true);
   };
 
+  const handleProjectCallSheet = () => {
+    if (!selectedProject) {
+      alert('Please select a project first');
+      return;
+    }
+    setShowProjectCallSheet(true);
+  };
+
   const filteredBudgetItems = selectedProject ? 
     budgetItems.filter(item => item.projectId === selectedProject) : 
     budgetItems;
@@ -440,6 +449,38 @@ Production Management Team`;
           </div>
         </div>
       </div>
+
+      {/* Project Call Sheet Section */}
+      {selectedProject && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Project Call Sheet</h3>
+            <p className="text-sm text-gray-600">
+              Generate a complete call sheet with all scenes for the selected project
+            </p>
+          </div>
+          
+          <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+              <div>
+                <div className="font-medium text-blue-900">
+                  {projects.find(p => p.id === selectedProject)?.title}
+                </div>
+                <div className="text-sm text-blue-700">
+                  {filteredScheduleItems.length} scenes total
+                </div>
+              </div>
+              <button
+                onClick={handleProjectCallSheet}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Film className="h-4 w-4" />
+                <span>Generate Project Call Sheet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Scene Call Sheets Section */}
       {reportType === 'schedule' && (
@@ -672,12 +713,21 @@ Production Management Team`;
       {/* Scene Call Sheet Modal */}
       {showSceneCallSheet && selectedScene && (
         <SceneCallSheet
-          scheduleItem={selectedScene}
-          project={projects.find(p => p.id === selectedScene.projectId)}
+          project={projects.find(p => p.id === selectedScene.projectId)!}
+          allScenes={[selectedScene]}
           onClose={() => {
             setShowSceneCallSheet(false);
             setSelectedScene(null);
           }}
+        />
+      )}
+
+      {/* Project Call Sheet Modal */}
+      {showProjectCallSheet && selectedProject && (
+        <SceneCallSheet
+          project={projects.find(p => p.id === selectedProject)!}
+          allScenes={filteredScheduleItems}
+          onClose={() => setShowProjectCallSheet(false)}
         />
       )}
     </div>

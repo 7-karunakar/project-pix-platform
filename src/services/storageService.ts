@@ -51,12 +51,15 @@ export interface ScheduleItem {
 export interface Asset {
   id: string;
   name: string;
-  category: 'props' | 'costumes' | 'equipment';
-  description: string;
-  status: 'available' | 'in-use' | 'maintenance';
+  type: 'prop' | 'costume' | 'equipment';
+  status: 'available' | 'checked-out' | 'maintenance' | 'damaged';
+  location: string;
   assignedTo?: string;
   assignedScene?: string;
-  cost: number;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  notes?: string;
+  barcode?: string;
 }
 
 export interface Location {
