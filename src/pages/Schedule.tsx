@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Calendar, Clock, User } from 'lucide-react';
+import { Plus, Search, Calendar, Clock, User, Mail } from 'lucide-react';
 import { storageService, ScheduleItem, Project, CastCrewMember } from '../services/storageService';
+import CallSheetGenerator from '../components/CallSheetGenerator';
 
 const Schedule: React.FC = () => {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
@@ -12,6 +12,7 @@ const Schedule: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+  const [showCallSheetGenerator, setShowCallSheetGenerator] = useState<ScheduleItem | null>(null);
   const [formData, setFormData] = useState({
     projectId: '',
     date: '',
@@ -144,7 +145,7 @@ const Schedule: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Production Schedule</h1>
-          <p className="text-gray-600 mt-1">Manage shooting schedules and daily call sheets</p>
+          <p className="text-gray-600 mt-1">Manage shooting schedules and digital call sheets</p>
         </div>
         <div className="flex space-x-3">
           <div className="flex bg-gray-100 rounded-lg">
@@ -337,8 +338,12 @@ const Schedule: React.FC = () => {
                       Cancel
                     </button>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    Generate Call Sheet
+                  <button
+                    onClick={() => setShowCallSheetGenerator(item)}
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>Generate Call Sheet</span>
                   </button>
                 </div>
               </div>
@@ -368,6 +373,16 @@ const Schedule: React.FC = () => {
             <span>Add Schedule</span>
           </button>
         </div>
+      )}
+
+      {/* Call Sheet Generator Modal */}
+      {showCallSheetGenerator && (
+        <CallSheetGenerator
+          scheduleItem={showCallSheetGenerator}
+          project={projects.find(p => p.id === showCallSheetGenerator.projectId)}
+          castCrew={castCrew}
+          onClose={() => setShowCallSheetGenerator(null)}
+        />
       )}
 
       {/* Create/Edit Schedule Modal */}

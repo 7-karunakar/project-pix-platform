@@ -1,415 +1,262 @@
 
-import { storageService, Project, BudgetItem, CastCrewMember, ScheduleItem, Asset, Location, Task, Message } from './storageService';
+import { storageService } from './storageService';
 
 export const initializeSampleData = () => {
   // Check if data already exists
-  const existingProjects = storageService.getProjects();
-  if (existingProjects.length > 0) {
-    return; // Data already exists, don't overwrite
-  }
+  if (storageService.getProjects().length > 0) return;
 
   // Sample Projects
-  const sampleProjects: Project[] = [
+  const sampleProjects = [
     {
       id: '1',
-      title: 'The Dark Knight Returns',
-      genre: 'Action',
-      budget: 15000000,
-      timeline: '8 months',
-      status: 'active',
-      description: 'A superhero thriller about Batman returning to fight crime in Gotham City.',
-      createdDate: new Date().toISOString(),
-      teamMembers: ['1', '2', '3']
+      title: 'Midnight Dreams',
+      genre: 'Thriller',
+      budget: 2500000,
+      timeline: '6 months',
+      status: 'in-production',
+      description: 'A psychological thriller about dreams and reality',
+      createdDate: '2024-01-15',
+      teamMembers: ['John Director', 'Sarah Producer', 'Mike Cinematographer']
     },
     {
       id: '2',
       title: 'Summer Romance',
       genre: 'Romance',
-      budget: 5000000,
+      budget: 1800000,
       timeline: '4 months',
-      status: 'planning',
-      description: 'A heartwarming love story set during summer vacation.',
-      createdDate: new Date(Date.now() - 86400000).toISOString(),
-      teamMembers: ['4', '5']
-    },
-    {
-      id: '3',
-      title: 'Space Odyssey',
-      genre: 'Sci-Fi',
-      budget: 25000000,
-      timeline: '12 months',
-      status: 'active',
-      description: 'An epic space adventure exploring distant galaxies.',
-      createdDate: new Date(Date.now() - 172800000).toISOString(),
-      teamMembers: ['6', '7', '8']
-    }
-  ];
-
-  // Sample Cast & Crew
-  const sampleCastCrew: CastCrewMember[] = [
-    {
-      id: '1',
-      name: 'Christian Bale',
-      role: 'Batman/Bruce Wayne',
-      type: 'cast',
-      contactInfo: { email: 'christian.bale@agency.com', phone: '+1-555-0101' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 50000
-    },
-    {
-      id: '2',
-      name: 'Christopher Nolan',
-      role: 'Director',
-      type: 'crew',
-      contactInfo: { email: 'c.nolan@production.com', phone: '+1-555-0102' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 25000
-    },
-    {
-      id: '3',
-      name: 'Hans Zimmer',
-      role: 'Composer',
-      type: 'crew',
-      contactInfo: { email: 'hans.zimmer@music.com', phone: '+1-555-0103' },
-      contractStatus: 'pending',
-      availability: [],
-      dailyRate: 15000
-    },
-    {
-      id: '4',
-      name: 'Emma Stone',
-      role: 'Lead Actress',
-      type: 'cast',
-      contactInfo: { email: 'emma.stone@agency.com', phone: '+1-555-0104' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 30000
-    },
-    {
-      id: '5',
-      name: 'Ryan Gosling',
-      role: 'Lead Actor',
-      type: 'cast',
-      contactInfo: { email: 'ryan.gosling@agency.com', phone: '+1-555-0105' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 35000
-    },
-    {
-      id: '6',
-      name: 'Denis Villeneuve',
-      role: 'Director',
-      type: 'crew',
-      contactInfo: { email: 'd.villeneuve@production.com', phone: '+1-555-0106' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 30000
-    },
-    {
-      id: '7',
-      name: 'Timothée Chalamet',
-      role: 'Lead Actor',
-      type: 'cast',
-      contactInfo: { email: 'timothee.chalamet@agency.com', phone: '+1-555-0107' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 25000
-    },
-    {
-      id: '8',
-      name: 'Roger Deakins',
-      role: 'Cinematographer',
-      type: 'crew',
-      contactInfo: { email: 'roger.deakins@production.com', phone: '+1-555-0108' },
-      contractStatus: 'signed',
-      availability: [],
-      dailyRate: 20000
+      status: 'pre-production',
+      description: 'A heartwarming love story set in coastal California',
+      createdDate: '2024-02-01',
+      teamMembers: ['Lisa Director', 'Tom Producer']
     }
   ];
 
   // Sample Budget Items
-  const sampleBudgetItems: BudgetItem[] = [
+  const sampleBudgetItems = [
     {
       id: '1',
       projectId: '1',
-      category: 'Cast & Crew',
-      description: 'Lead Actor Payment - Christian Bale',
-      budgetAmount: 2000000,
-      actualAmount: 2000000,
-      status: 'approved',
-      date: new Date().toISOString()
+      category: 'Equipment',
+      description: 'Camera rental for principal photography',
+      budgetAmount: 50000,
+      actualAmount: 45000,
+      status: 'approved' as const,
+      date: '2024-03-01'
     },
     {
       id: '2',
       projectId: '1',
-      category: 'Equipment',
-      description: 'Camera Equipment Rental',
-      budgetAmount: 500000,
-      actualAmount: 450000,
-      status: 'approved',
-      date: new Date().toISOString()
+      category: 'Cast',
+      description: 'Lead actor compensation',
+      budgetAmount: 200000,
+      actualAmount: 200000,
+      status: 'approved' as const,
+      date: '2024-03-05'
     },
     {
       id: '3',
-      projectId: '1',
-      category: 'Locations',
-      description: 'Gotham City Set Construction',
-      budgetAmount: 3000000,
-      actualAmount: 2800000,
-      status: 'approved',
-      date: new Date().toISOString()
-    },
-    {
-      id: '4',
       projectId: '2',
-      category: 'Cast & Crew',
-      description: 'Lead Actress Payment - Emma Stone',
-      budgetAmount: 1000000,
+      category: 'Location',
+      description: 'Beach house rental',
+      budgetAmount: 30000,
       actualAmount: 0,
-      status: 'pending',
-      date: new Date().toISOString()
+      status: 'pending' as const,
+      date: '2024-04-01'
+    }
+  ];
+
+  // Sample Cast & Crew
+  const sampleCastCrew = [
+    {
+      id: '1',
+      name: 'Emma Stone',
+      role: 'Lead Actress',
+      type: 'cast' as const,
+      contactInfo: {
+        email: 'emma.stone@agency.com',
+        phone: '+1-555-0101'
+      },
+      contractStatus: 'signed' as const,
+      availability: ['2024-03-15', '2024-03-16', '2024-03-17'],
+      dailyRate: 15000
     },
     {
-      id: '5',
-      projectId: '3',
-      category: 'Props & Costumes',
-      description: 'Space Suit Design and Creation',
-      budgetAmount: 800000,
-      actualAmount: 750000,
-      status: 'approved',
-      date: new Date().toISOString()
+      id: '2',
+      name: 'Michael Johnson',
+      role: 'Cinematographer',
+      type: 'crew' as const,
+      contactInfo: {
+        email: 'mike.j@filmcrew.com',
+        phone: '+1-555-0102'
+      },
+      contractStatus: 'signed' as const,
+      availability: ['2024-03-15', '2024-03-16', '2024-03-17', '2024-03-18'],
+      dailyRate: 2500
+    },
+    {
+      id: '3',
+      name: 'Sarah Director',
+      role: 'Director',
+      type: 'crew' as const,
+      contactInfo: {
+        email: 'sarah.d@production.com',
+        phone: '+1-555-0103'
+      },
+      contractStatus: 'signed' as const,
+      availability: ['2024-03-15', '2024-03-16', '2024-03-17', '2024-03-18', '2024-03-19'],
+      dailyRate: 5000
     }
   ];
 
   // Sample Schedule Items
-  const today = new Date();
-  const tomorrow = new Date(today.getTime() + 86400000);
-  const dayAfter = new Date(today.getTime() + 172800000);
-
-  const sampleScheduleItems: ScheduleItem[] = [
+  const sampleScheduleItems = [
     {
       id: '1',
       projectId: '1',
-      date: today.toISOString().split('T')[0],
+      date: '2024-03-15',
       time: '08:00',
-      scene: 'Scene 15 - Batman vs Joker Rooftop Fight',
-      location: 'Warner Bros Studio - Stage 5',
-      cast: ['1'],
-      crew: ['2', '8'],
-      notes: 'Night shoot, safety coordinator required',
-      status: 'in-progress'
+      scene: 'Opening Sequence - Dream Scene',
+      location: 'Studio A - Soundstage',
+      cast: ['Emma Stone'],
+      crew: ['Michael Johnson', 'Sarah Director'],
+      notes: 'Fog machine required for dream sequence',
+      status: 'scheduled' as const
     },
     {
       id: '2',
       projectId: '1',
-      date: tomorrow.toISOString().split('T')[0],
-      time: '06:00',
-      scene: 'Scene 22 - Wayne Manor Interior',
-      location: 'Wayne Manor Set',
-      cast: ['1'],
-      crew: ['2'],
-      notes: 'Early morning shoot for golden hour lighting',
-      status: 'scheduled'
-    },
-    {
-      id: '3',
-      projectId: '2',
-      date: dayAfter.toISOString().split('T')[0],
-      time: '10:00',
-      scene: 'Scene 5 - Beach Walk Romance',
-      location: 'Malibu Beach',
-      cast: ['4', '5'],
-      crew: ['6'],
-      notes: 'Weather dependent, backup indoor location available',
-      status: 'scheduled'
-    },
-    {
-      id: '4',
-      projectId: '3',
-      date: new Date(today.getTime() - 86400000).toISOString().split('T')[0],
-      time: '14:00',
-      scene: 'Scene 8 - Spaceship Interior',
-      location: 'Sony Studios - Stage 12',
-      cast: ['7'],
-      crew: ['6', '8'],
-      notes: 'Green screen work, VFX team on standby',
-      status: 'completed'
+      date: '2024-03-16',
+      time: '09:00',
+      scene: 'Apartment Interior - Morning',
+      location: 'Location House - Downtown',
+      cast: ['Emma Stone'],
+      crew: ['Michael Johnson', 'Sarah Director'],
+      notes: 'Natural lighting preferred',
+      status: 'scheduled' as const
     }
   ];
 
   // Sample Assets
-  const sampleAssets: Asset[] = [
+  const sampleAssets = [
     {
       id: '1',
-      name: 'Batmobile',
-      category: 'props',
-      description: 'Main vehicle for Batman scenes',
-      status: 'in-use',
-      assignedTo: 'Stunt Team',
-      assignedScene: 'Scene 15',
-      cost: 500000
+      name: 'RED Camera Package',
+      category: 'equipment' as const,
+      description: 'RED Epic-W 8K camera with lens kit',
+      status: 'available' as const,
+      cost: 45000
     },
     {
       id: '2',
-      name: 'Batman Costume',
-      category: 'costumes',
-      description: 'Primary Batman suit',
-      status: 'in-use',
-      assignedTo: 'Christian Bale',
-      assignedScene: 'Scene 15',
-      cost: 100000
+      name: 'Period Costume Set',
+      category: 'costumes' as const,
+      description: '1920s era costumes for lead characters',
+      status: 'in-use' as const,
+      assignedTo: 'Emma Stone',
+      assignedScene: 'Opening Sequence',
+      cost: 8000
     },
     {
       id: '3',
-      name: 'RED Camera Package',
-      category: 'equipment',
-      description: 'Primary camera equipment',
-      status: 'available',
-      cost: 150000
-    },
-    {
-      id: '4',
-      name: 'Space Helmet',
-      category: 'props',
-      description: 'Astronaut helmet for space scenes',
-      status: 'in-use',
-      assignedTo: 'Timothée Chalamet',
-      assignedScene: 'Scene 8',
-      cost: 25000
-    },
-    {
-      id: '5',
-      name: 'Lighting Rig',
-      category: 'equipment',
-      description: 'Professional lighting equipment',
-      status: 'maintenance',
-      cost: 75000
+      name: 'Vintage Car Prop',
+      category: 'props' as const,
+      description: '1965 Ford Mustang convertible',
+      status: 'available' as const,
+      cost: 12000
     }
   ];
 
   // Sample Locations
-  const sampleLocations: Location[] = [
+  const sampleLocations = [
     {
       id: '1',
-      name: 'Warner Bros Studio',
-      address: '4000 Warner Boulevard, Burbank, CA 91522',
-      contactPerson: 'Studio Manager',
-      permitStatus: 'approved',
-      cost: 50000,
-      availability: [],
-      notes: 'Full studio access, parking available'
+      name: 'Downtown Loft',
+      address: '123 Main St, Los Angeles, CA 90210',
+      contactPerson: 'Property Manager - John Smith',
+      permitStatus: 'approved' as const,
+      cost: 5000,
+      availability: ['2024-03-15', '2024-03-16', '2024-03-17'],
+      notes: 'Parking available for 20 vehicles'
     },
     {
       id: '2',
-      name: 'Malibu Beach',
-      address: 'Malibu, CA 90265',
-      contactPerson: 'Parks Department',
-      permitStatus: 'approved',
-      cost: 15000,
-      availability: [],
-      notes: 'Weather dependent, tide schedule important'
-    },
-    {
-      id: '3',
-      name: 'Downtown LA Rooftop',
-      address: '123 Main St, Los Angeles, CA 90012',
-      contactPerson: 'Building Owner',
-      permitStatus: 'pending',
-      cost: 25000,
-      availability: [],
-      notes: 'Safety equipment required, insurance needed'
-    },
-    {
-      id: '4',
-      name: 'Sony Studios',
-      address: '10202 W Washington Blvd, Culver City, CA 90232',
-      contactPerson: 'Location Manager',
-      permitStatus: 'approved',
-      cost: 60000,
-      availability: [],
-      notes: 'Green screen stages available'
+      name: 'Malibu Beach House',
+      address: '456 Ocean Dr, Malibu, CA 90265',
+      contactPerson: 'Owner - Lisa Williams',
+      permitStatus: 'pending' as const,
+      cost: 8000,
+      availability: ['2024-04-01', '2024-04-02', '2024-04-03']
     }
   ];
 
   // Sample Tasks
-  const sampleTasks: Task[] = [
+  const sampleTasks = [
     {
       id: '1',
-      title: 'Finalize VFX shots for Scene 8',
-      description: 'Complete post-production work on space scenes',
-      assignedTo: 'VFX Team',
-      priority: 'high',
-      status: 'in-progress',
-      dueDate: tomorrow.toISOString().split('T')[0],
-      projectId: '3'
+      title: 'Finalize shooting script',
+      description: 'Complete final revisions to the shooting script based on director feedback',
+      assignedTo: 'Sarah Director',
+      priority: 'high' as const,
+      status: 'in-progress' as const,
+      dueDate: '2024-03-10',
+      projectId: '1',
+      dependencies: []
     },
     {
       id: '2',
-      title: 'Schedule costume fittings',
-      description: 'Organize final costume fittings for all cast members',
-      assignedTo: 'Costume Department',
-      priority: 'medium',
-      status: 'todo',
-      dueDate: dayAfter.toISOString().split('T')[0],
-      projectId: '1'
+      title: 'Secure location permits',
+      description: 'Obtain all necessary permits for downtown loft location',
+      assignedTo: 'Tom Producer',
+      priority: 'medium' as const,
+      status: 'todo' as const,
+      dueDate: '2024-03-12',
+      projectId: '1',
+      dependencies: []
     },
     {
       id: '3',
-      title: 'Secure rooftop location permits',
-      description: 'Get all necessary permits for downtown rooftop shooting',
-      assignedTo: 'Location Manager',
-      priority: 'high',
-      status: 'in-progress',
-      dueDate: today.toISOString().split('T')[0],
-      projectId: '1'
+      title: 'Equipment delivery coordination',
+      description: 'Coordinate delivery of camera equipment to set',
+      assignedTo: 'Michael Johnson',
+      priority: 'high' as const,
+      status: 'in-progress' as const,
+      dueDate: '2024-03-14',
+      projectId: '1',
+      dependencies: []
     }
   ];
 
   // Sample Messages
-  const sampleMessages: Message[] = [
+  const sampleMessages = [
     {
       id: '1',
-      sender: 'Christopher Nolan',
+      sender: 'Sarah Director',
       recipient: 'Production Team',
-      subject: 'Schedule Change for Tomorrow',
-      content: 'Due to weather conditions, we need to move the rooftop scene to Stage 5. Please inform all cast and crew.',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      subject: 'Script Changes for Tomorrow',
+      content: 'Please note the script changes for tomorrow\'s shoot. Scene 15 has been moved to the end of the day.',
+      timestamp: '2024-03-14T10:30:00Z',
       isRead: false,
       channel: 'production'
     },
     {
       id: '2',
-      sender: 'Costume Department',
-      recipient: 'Christian Bale',
-      subject: 'Costume Fitting Reminder',
-      content: 'Reminder: Costume fitting scheduled for tomorrow at 2 PM in Trailer 3.',
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      sender: 'Michael Johnson',
+      recipient: 'Equipment Team',
+      subject: 'Camera Setup Complete',
+      content: 'Camera setup is complete and tested. Ready for first shot at 8:00 AM.',
+      timestamp: '2024-03-14T15:45:00Z',
       isRead: true,
-      channel: 'cast'
-    },
-    {
-      id: '3',
-      sender: 'VFX Supervisor',
-      recipient: 'Denis Villeneuve',
-      subject: 'VFX Progress Update',
-      content: 'Space sequence VFX are 80% complete. Expecting final delivery by end of week.',
-      timestamp: new Date(Date.now() - 10800000).toISOString(),
-      isRead: false,
-      channel: 'production'
+      channel: 'technical'
     }
   ];
 
   // Save all sample data
   sampleProjects.forEach(project => storageService.saveProject(project));
-  sampleCastCrew.forEach(member => storageService.saveCastCrewMember(member));
   sampleBudgetItems.forEach(item => storageService.saveBudgetItem(item));
+  sampleCastCrew.forEach(member => storageService.saveCastCrewMember(member));
   sampleScheduleItems.forEach(item => storageService.saveScheduleItem(item));
   sampleAssets.forEach(asset => storageService.saveAsset(asset));
   sampleLocations.forEach(location => storageService.saveLocation(location));
   sampleTasks.forEach(task => storageService.saveTask(task));
   sampleMessages.forEach(message => storageService.saveMessage(message));
-
-  console.log('Sample data initialized successfully!');
 };

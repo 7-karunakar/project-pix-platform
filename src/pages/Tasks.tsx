@@ -7,16 +7,7 @@ const Tasks: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [castCrew, setCastCrew] = useState<CastCrewMember[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<{
-    title: string;
-    description: string;
-    assignedTo: string;
-    priority: 'low' | 'medium' | 'high';
-    status: 'todo' | 'in-progress' | 'completed';
-    dueDate: string;
-    projectId: string;
-    dependencies: string[];
-  } | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +62,7 @@ const Tasks: React.FC = () => {
   };
 
   const handleEdit = (task: Task) => {
-    setEditingTask({
+    setFormData({
       title: task.title,
       description: task.description,
       assignedTo: task.assignedTo,
@@ -81,6 +72,7 @@ const Tasks: React.FC = () => {
       projectId: task.projectId,
       dependencies: task.dependencies
     });
+    setEditingTask(task);
     setShowForm(true);
   };
 
