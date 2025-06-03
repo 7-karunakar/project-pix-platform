@@ -136,22 +136,24 @@ export const initializeSampleData = () => {
     }
   ];
 
-  // Sample Assets
+  // Sample Assets - Fixed to match Asset interface
   const sampleAssets = [
     {
       id: '1',
       name: 'RED Camera Package',
-      category: 'equipment' as const,
+      type: 'equipment' as const,
       description: 'RED Epic-W 8K camera with lens kit',
       status: 'available' as const,
+      location: 'Equipment Storage Room A',
       cost: 45000
     },
     {
       id: '2',
       name: 'Period Costume Set',
-      category: 'costumes' as const,
+      type: 'costume' as const,
       description: '1920s era costumes for lead characters',
-      status: 'in-use' as const,
+      status: 'checked-out' as const,
+      location: 'Wardrobe Department',
       assignedTo: 'Emma Stone',
       assignedScene: 'Opening Sequence',
       cost: 8000
@@ -159,9 +161,10 @@ export const initializeSampleData = () => {
     {
       id: '3',
       name: 'Vintage Car Prop',
-      category: 'props' as const,
+      type: 'prop' as const,
       description: '1965 Ford Mustang convertible',
       status: 'available' as const,
+      location: 'Vehicle Storage Lot B',
       cost: 12000
     }
   ];
