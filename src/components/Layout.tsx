@@ -20,6 +20,7 @@ import {
   User
 } from 'lucide-react';
 import { authService } from '../services/authService';
+import { rbacService } from '../services/rbacService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,19 +32,24 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogout }) => {
   const location = useLocation();
   const currentUser = authService.getCurrentUser();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Projects', href: '/projects', icon: FolderOpen },
-    { name: 'Budget', href: '/budget', icon: DollarSign },
-    { name: 'Cast & Crew', href: '/cast-crew', icon: Users },
-    { name: 'Schedule', href: '/schedule', icon: Calendar },
-    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-    { name: 'Assets', href: '/assets', icon: Package },
-    { name: 'Locations', href: '/locations', icon: MapPin },
-    { name: 'Communication', href: '/communication', icon: MessageSquare },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Feedback', href: '/feedback', icon: MessageCircle },
+  const allNavigation = [
+    { name: 'Dashboard', href: '/', icon: Home, permission: 'dashboard' as const },
+    { name: 'Projects', href: '/projects', icon: FolderOpen, permission: 'projects' as const },
+    { name: 'Budget', href: '/budget', icon: DollarSign, permission: 'budget' as const },
+    { name: 'Cast & Crew', href: '/cast-crew', icon: Users, permission: 'castCrew' as const },
+    { name: 'Schedule', href: '/schedule', icon: Calendar, permission: 'schedule' as const },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare, permission: 'tasks' as const },
+    { name: 'Assets', href: '/assets', icon: Package, permission: 'assets' as const },
+    { name: 'Locations', href: '/locations', icon: MapPin, permission: 'locations' as const },
+    { name: 'Communication', href: '/communication', icon: MessageSquare, permission: 'communication' as const },
+    { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'reports' as const },
+    { name: 'Feedback', href: '/feedback', icon: MessageCircle, permission: 'feedback' as const },
   ];
+
+  // Filter navigation based on user permissions
+  const navigation = allNavigation.filter(item => 
+    rbacService.hasPermission(item.permission)
+  );
 
   const handleLogout = () => {
     onLogout();
