@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Lock, Film } from 'lucide-react';
 import { authService } from '../services/authService';
@@ -18,6 +17,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
   const [showTestCredentials, setShowTestCredentials] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +43,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       });
       
       if (success) {
-        onLogin();
+        // Show success message and redirect to login
+        setShowSuccessMessage(true);
+        setFormData(prev => ({ ...prev, username: '', email: '', password: '' }));
+        setTimeout(() => {
+          setIsLogin(true);
+          setShowSuccessMessage(false);
+        }, 2000);
       } else {
         setError('Username or email already exists');
       }
@@ -76,6 +82,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
               {error}
+            </div>
+          )}
+
+          {showSuccessMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4">
+              Account created successfully! Redirecting to sign-in...
             </div>
           )}
 
@@ -209,6 +221,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError('');
+                  setShowSuccessMessage(false);
                   setFormData(prev => ({ ...prev, username: '', email: '', password: '' }));
                 }}
                 className="ml-1 text-blue-600 hover:text-blue-700 font-medium"

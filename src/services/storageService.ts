@@ -93,7 +93,14 @@ export interface Message {
   content: string;
   timestamp: string;
   isRead: boolean;
-  channel?: string;
+  channel: string;
+  attachments?: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+  }[];
 }
 
 class StorageService {

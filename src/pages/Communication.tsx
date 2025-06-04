@@ -1,13 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MessageSquare, User, Mail } from 'lucide-react';
+import { Plus, Search, MessageSquare, User, Mail, Upload, Download, File } from 'lucide-react';
 import { storageService, Message } from '../services/storageService';
+
+interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+}
 
 const Communication: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChannel, setSelectedChannel] = useState('general');
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
   const [formData, setFormData] = useState({
     recipient: '',
     subject: '',
@@ -19,8 +27,36 @@ const Communication: React.FC = () => {
     setMessages(storageService.getMessages());
   }, []);
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const newAttachment: FileAttachment = {
+          id: Date.now().toString() + Math.random(),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: URL.createObjectURL(file)
+        };
+        setAttachedFiles(prev => [...prev, newAttachment]);
+      });
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachedFiles(prev => prev.filter(file => file.id !== id));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleSendMessage = () => {
-    if (formData.content.trim()) {
+    if (formData.content.trim() || attachedFiles.length > 0) {
       const newMessage: Message = {
         id: Date.now().toString(),
         sender: 'Current User',
@@ -29,7 +65,8 @@ const Communication: React.FC = () => {
         content: formData.content,
         timestamp: new Date().toISOString(),
         isRead: false,
-        channel: formData.channel
+        channel: formData.channel,
+        attachments: attachedFiles
       };
 
       storageService.saveMessage(newMessage);
@@ -53,6 +90,7 @@ const Communication: React.FC = () => {
       content: '',
       channel: 'general'
     });
+    setAttachedFiles([]);
   };
 
   const filteredMessages = messages.filter(message => {
@@ -237,7 +275,33 @@ const Communication: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-gray-700 mb-2">{message.content}</p>
-                      <div className="flex items-center justify-between">
+                      
+                      {/* File Attachments */}
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Attachments:</h5>
+                          <div className="space-y-2">
+                            {message.attachments.map((file) => (
+                              <div key={file.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                <div className="flex items-center space-x-2">
+                                  <File className="h-4 w-4 text-gray-500" />
+                                  <span className="text-sm text-gray-700">{file.name}</span>
+                                  <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                                </div>
+                                <a
+                                  href={file.url}
+                                  download={file.name}
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-3">
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
                           #{message.channel}
                         </span>
@@ -323,6 +387,45 @@ const Communication: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Type your message..."
                   />
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">Click to upload files</span>
+                    </label>
+                  </div>
+                  
+                  {/* Attached Files */}
+                  {attachedFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {attachedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex items-center space-x-2">
+                            <File className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">{file.name}</span>
+                            <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                          </div>
+                          <button
+                            onClick={() => removeAttachment(file.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

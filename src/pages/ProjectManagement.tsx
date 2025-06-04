@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, FolderOpen, Calendar, User } from 'lucide-react';
 import { storageService, Project } from '../services/storageService';
@@ -6,6 +5,7 @@ import { storageService, Project } from '../services/storageService';
 const ProjectManagement: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({
@@ -93,10 +93,12 @@ const ProjectManagement: React.FC = () => {
     setShowCreateModal(true);
   };
 
-  const filteredProjects = projects.filter(project =>
-    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.genre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.genre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === '' || project.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,7 +140,11 @@ const ProjectManagement: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
             <option value="">All Status</option>
             <option value="planning">Planning</option>
             <option value="active">Active</option>
@@ -178,7 +184,7 @@ const ProjectManagement: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Team Members</span>
-                <span className="font-medium">{project.teamMembers.length}</span>
+                <span className="font-medium">{project.teamMembers?.length || 0}</span>
               </div>
             </div>
 
